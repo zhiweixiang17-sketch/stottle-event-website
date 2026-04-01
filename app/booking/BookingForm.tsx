@@ -1,7 +1,7 @@
 "use client";
 
-import { postToFormspree } from "@/lib/postToFormspree";
-import { useMemo, useState, type FormEvent } from "react";
+import { postSiteForm } from "@/lib/postSiteForm";
+import { useState, type FormEvent } from "react";
 
 type SubmitState =
   | { status: "idle" }
@@ -16,30 +16,21 @@ export default function BookingForm({
 }) {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
 
-  // Configure this to your form service endpoint.
-  // Example (Formspree): "https://formspree.io/f/xxxxxxx"
-  const endpoint = useMemo(() => {
-    return process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT ?? "";
-  }, []);
-
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
-    if (!endpoint) {
-      setSubmitState({
-        status: "error",
-        message:
-          "Form service endpoint is not set. Add NEXT_PUBLIC_FORMSPREE_ENDPOINT in your environment.",
-      });
-      return;
-    }
 
     setSubmitState({ status: "submitting" });
 
     const formData = new FormData(e.currentTarget);
     const submittedEventDate = formData.get("eventDate")?.toString() ?? null;
 
-    const result = await postToFormspree(endpoint, formData);
+    const result = await postSiteForm("/api/booking", {
+      name: formData.get("name")?.toString() ?? "",
+      email: formData.get("email")?.toString() ?? "",
+      phone: formData.get("phone")?.toString() ?? "",
+      eventDate: formData.get("eventDate")?.toString() ?? "",
+      message: formData.get("message")?.toString() ?? "",
+    });
     if (!result.ok) {
       setSubmitState({ status: "error", message: result.message });
       return;
@@ -53,8 +44,6 @@ export default function BookingForm({
   return (
     <form
       className="rounded-3xl border border-zinc-200/70 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5"
-      action="#"
-      method="post"
       onSubmit={onSubmit}
     >
       {submitState.status === "success" ? (

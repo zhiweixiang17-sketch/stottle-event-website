@@ -1,7 +1,7 @@
 "use client";
 
-import { postToFormspree } from "@/lib/postToFormspree";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { postSiteForm } from "@/lib/postSiteForm";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 type SubmitState =
   | { status: "idle" }
@@ -29,28 +29,20 @@ function Field({
 export default function ContactForm() {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
 
-  const endpoint = useMemo(
-    () => process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT ?? "",
-    [],
-  );
-
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
-    if (!endpoint) {
-      setSubmitState({
-        status: "error",
-        message:
-          "Form service endpoint is not set. Add NEXT_PUBLIC_FORMSPREE_ENDPOINT in your environment (and in Vercel → Settings → Environment Variables).",
-      });
-      return;
-    }
 
     setSubmitState({ status: "submitting" });
 
     const formData = new FormData(e.currentTarget);
 
-    const result = await postToFormspree(endpoint, formData);
+    const result = await postSiteForm("/api/contact", {
+      name: formData.get("name")?.toString() ?? "",
+      email: formData.get("email")?.toString() ?? "",
+      message: formData.get("message")?.toString() ?? "",
+      _subject: formData.get("_subject")?.toString() ?? "",
+      form_source: formData.get("form_source")?.toString() ?? "",
+    });
     if (!result.ok) {
       setSubmitState({ status: "error", message: result.message });
       return;
